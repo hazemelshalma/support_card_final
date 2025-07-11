@@ -1,0 +1,191 @@
+
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>بطاقة دعم مرشح مجلس الشيوخ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+  <style>
+    body {
+      text-align: center;
+      font-family: 'Cairo', sans-serif;
+      direction: rtl;
+      background-color: #f0f0f0;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      margin: auto;
+      max-width: 800px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    .hidden { display: none; }
+    #preview {
+      width: 300px;
+      height: 300px;
+      margin: 10px auto;
+      overflow: hidden;
+      border: 1px solid #ccc;
+    }
+    #preview img {
+      max-width: 100%;
+    }
+    #finalCanvas {
+      border: 1px solid #ccc;
+      display: none;
+      max-width: 100%;
+      margin-top: 20px;
+    }
+    #downloadBtn {
+      display: none;
+      margin-top: 20px;
+      font-size: 18px;
+      text-decoration: none;
+      background-color: #4CAF50;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 5px;
+    }
+    #downloadBtn:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>أنشئ بطاقة دعمك للمرشح د/ عمرو سعد الشلمه</h2>
+    <p style="font-size: 16px; margin-bottom: 20px;">ادعم حملته في انتخابات مجلس الشيوخ 2025 ✌️</p>
+
+    <input type="text" id="nameInput" placeholder="أدخل اسمك" style="margin-bottom: 10px;">
+    <br>
+    <input type="file" id="imageInput" accept="image/*">
+    <br><br>
+
+    <div id="cropperContainer" class="hidden">
+      <h3>قص صورتك</h3>
+      <div id="preview">
+        <img id="imagePreview" alt="معاينة">
+      </div>
+      <button id="cropBtn">اعتماد القص</button>
+    </div>
+
+    <button id="generateBtn" class="hidden">إنشاء بطاقة الدعم</button>
+
+    <canvas id="finalCanvas"></canvas>
+    <br>
+    <a id="downloadBtn" download="بطاقة_دعم.png">تحميل البطاقة</a>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+  <script>
+    let cropper;
+    let croppedImageData;
+    const imageInput = document.getElementById('imageInput');
+    const cropperContainer = document.getElementById('cropperContainer');
+    const imagePreview = document.getElementById('imagePreview');
+    const cropBtn = document.getElementById('cropBtn');
+    const generateBtn = document.getElementById('generateBtn');
+    const finalCanvas = document.getElementById('finalCanvas');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const nameInput = document.getElementById('nameInput');
+
+    imageInput.addEventListener('change', function() {
+      const file = this.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        imagePreview.src = e.target.result;
+        cropperContainer.classList.remove('hidden');
+        if (cropper) cropper.destroy();
+        cropper = new Cropper(imagePreview, {
+          aspectRatio: 1,
+          viewMode: 2,
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+
+    cropBtn.addEventListener('click', function() {
+      if (!cropper) return;
+      const canvas = cropper.getCroppedCanvas({ width: 300, height: 300 });
+      croppedImageData = canvas.toDataURL('image/png');
+      cropperContainer.classList.add('hidden');
+      generateBtn.classList.remove('hidden');
+    });
+
+    generateBtn.addEventListener('click', function() {
+      if (!nameInput.value.trim()) {
+        alert("يرجى إدخال الاسم أولاً");
+        return;
+      }
+      finalCanvas.width = 600;
+      finalCanvas.height = 800;
+      const ctx = finalCanvas.getContext('2d');
+
+      const bg = new Image();
+      bg.src = "support-bg.png";
+      const userImg = new Image();
+      userImg.src = croppedImageData;
+
+      let loadedCount = 0;
+      [bg, userImg].forEach(img => {
+        img.onload = () => {
+          loadedCount++;
+          if (loadedCount === 2) {
+            drawFinal(ctx, bg, userImg);
+          }
+        };
+      });
+    });
+
+    function drawFinal(ctx, bg, userImg) {
+      ctx.drawImage(bg, 0, 0, finalCanvas.width, finalCanvas.height);
+
+      const diameter = 300;
+      const radius = diameter / 2;
+      const circleCenterX = 470;
+      const circleCenterY = 250;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(circleCenterX, circleCenterY, radius, 0, 2 * Math.PI);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(userImg, circleCenterX - radius, circleCenterY - radius, diameter, diameter);
+      ctx.restore();
+
+      const rectWidth = 400;
+      const rectHeight = 50;
+      const rectX = 370;
+      const rectY = circleCenterY + radius + 30;
+      ctx.fillStyle = "#0A3871";
+      ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
+
+      ctx.fillStyle = "#fff";
+      ctx.font = "700 24px 'Cairo', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(nameInput.value, 470, rectY + 33);
+
+      ctx.fillStyle = "#0A3871";
+      ctx.font = "700 22px 'Cairo', sans-serif";
+      ctx.fillText("أنا بدعم المرشح د/ عمرو سعد الشلمه", 470, rectY + 80);
+      ctx.fillText("لمجلس الشيوخ 2025", 470, rectY + 120);
+      ctx.fillText("رمزه: الكتاب – رقم 4", 470, rectY + 160);
+
+      ctx.fillStyle = "#DA6E0F";
+      ctx.font = "700 18px 'Cairo', sans-serif";
+      ctx.fillText("صوتك هيفرق – شارك وادعم", 470, rectY + 200);
+
+      ctx.fillStyle = "#0A3871";
+      ctx.font = "700 16px 'Cairo', sans-serif";
+      ctx.fillText("#هنكمل_المشوار", 470, rectY + 230);
+
+      finalCanvas.style.display = "block";
+      downloadBtn.style.display = "inline-block";
+      downloadBtn.href = finalCanvas.toDataURL("image/png");
+    }
+  </script>
+</body>
+</html>
